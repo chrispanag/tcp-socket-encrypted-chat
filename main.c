@@ -14,11 +14,6 @@
 #define BUFFER_SIZE 1000
 #define TCP_BACKLOG 1
 
-void *myThreadFun(void *vargp) {
-  int *d = (int *)vargp;
-  return NULL;
-}
-
 int client(char *hostname, int port) {
   int sd;
   /* Create TCP/IP socket, used as main chat channel */
