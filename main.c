@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +13,11 @@
 #define DEFAULT_HOSTNAME "127.0.0.1"
 #define BUFFER_SIZE 1000
 #define TCP_BACKLOG 1
+
+void *myThreadFun(void *vargp) {
+  int *d = (int *)vargp;
+  return NULL;
+}
 
 int client(char *hostname, int port) {
   int sd;
@@ -110,7 +116,8 @@ void exitChat(int d) {
   printf("Exiting...\n");
 }
 
-void handleReceive(int d) {
+void *handleReceive(void *vargp) {
+  int d = *(int *)vargp;
   int n;
   char buf[BUFFER_SIZE];
   for (;;) {
@@ -128,6 +135,8 @@ void handleReceive(int d) {
     printf("\rOther guy: %sYou: ", buf);
     fflush(stdout);
   }
+
+  return NULL;
 }
 
 void handleSend(int d) {
@@ -156,6 +165,17 @@ void handleSend(int d) {
   }
 }
 
+int file_descriptor = -1;
+pthread_t thread_id;
+
+void handle_sigint(int sig) {
+  if (file_descriptor != -1) {
+    pthread_kill(thread_id, SIGKILL);
+    if (close(file_descriptor) < 0) perror("close");
+  }
+  exit(0);
+}
+
 int main(int argc, char **argv) {
   int listen_port = DEFAULT_TCP_PORT;
   char *hostname = DEFAULT_HOSTNAME;
@@ -171,23 +191,21 @@ int main(int argc, char **argv) {
     hostname = argv[3];
   }
 
-  int d;
+  signal(SIGINT, handle_sigint);
+
   if (strcmp(argv[1], "server") == 0) {
-    d = server(listen_port);
+    file_descriptor = server(listen_port);
   } else {
-    d = client(hostname, listen_port);
+    file_descriptor = client(hostname, listen_port);
   }
 
   printf("You: ");
   fflush(stdout);
 
-  if (fork() == 0) {
-    handleReceive(d);
-  } else {
-    handleSend(d);
-  }
+  pthread_create(&thread_id, NULL, handleReceive, (void *)&file_descriptor);
+  handleSend(file_descriptor);
 
-  if (close(d) < 0) perror("close");
+  if (close(file_descriptor) < 0) perror("close");
 
   return 1;
 }
