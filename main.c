@@ -101,6 +101,15 @@ ssize_t insist_write(int fd, const void *buf, size_t cnt) {
   return orig_cnt;
 }
 
+void exitChat(int d) {
+  if (shutdown(d, SHUT_WR) < 0) {
+    perror("shutdown");
+    exit(1);
+  }
+
+  printf("Exiting...\n");
+}
+
 void handleReceive(int d) {
   int n;
   char buf[BUFFER_SIZE];
@@ -121,7 +130,7 @@ void handleReceive(int d) {
   }
 }
 
-void handleSend(int sd) {
+void handleSend(int d) {
   char readbuf[BUFFER_SIZE];
   int n;
 
@@ -130,11 +139,15 @@ void handleSend(int sd) {
     if (readbuf[0] == '\n') {
       continue;
     }
+    if (strcmp(readbuf, "/exit\n") == 0) {
+      exitChat(d);
+      break;
+    }
     printf("You: ");
     n = strlen(readbuf);
     // /* Be careful with buffer overruns, ensure NUL-termination */
 
-    if (insist_write(sd, readbuf, n + 1) != n + 1) {
+    if (insist_write(d, readbuf, n + 1) != n + 1) {
       perror("write");
       exit(1);
     }
@@ -173,6 +186,8 @@ int main(int argc, char **argv) {
   } else {
     handleSend(d);
   }
+
   if (close(d) < 0) perror("close");
+
   return 1;
 }
