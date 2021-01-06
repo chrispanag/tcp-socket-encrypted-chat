@@ -20,8 +20,6 @@
 #define BLOCK_SIZE 16
 #define KEY_SIZE 16 /* AES128 */
 
-cryptodev_verbosity = 10000;
-
 struct chat_config {
     int file_descriptor;
     int decryptor;
@@ -300,11 +298,6 @@ int main(int argc, char** argv) {
 
     pthread_create(&thread_id, NULL, handleReceive, (void*)&config);
     handleSend(config);
-
-    // if (ioctl(encryptorFile, CIOCFSESSION, &sess.ses)) {
-    //     perror("ioctl(CIOCFSESSION)");
-    //     return 1;
-    // }
 
     if (close(file_descriptor) < 0)
         perror("close");
