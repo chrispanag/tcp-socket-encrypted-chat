@@ -5,6 +5,12 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <stdio.h>
+
+#define BLOCK_SIZE 16
+#define KEY_SIZE 16 /* AES128 */
 
 #endif
 

@@ -2,7 +2,7 @@
 #define L_ENCRYPTOR_H
 
 #include <stdlib.h>
-
+#include <crypto/cryptodev.h>
 #endif
 
 int openEncryptor();

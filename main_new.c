@@ -23,7 +23,8 @@ ssize_t insist_write(int fd, const void* buf, size_t cnt) {
 
   while (cnt > 0) {
     ret = write(fd, buf, cnt);
-    if (ret < 0) return ret;
+    if (ret < 0)
+      return ret;
     buf += ret;
     cnt -= ret;
   }
@@ -103,6 +104,11 @@ int server(int port, int* sd) {
   return newsd;
 }
 
+int e_fd = -1;
+struct session_op sess;
+unsigned char* key = (unsigned char*)"123456789123456";
+unsigned char* iv = (unsigned char*)"123456789123456";
+
 int receive_handler(int fd, char* buffer, int index) {
   int n = read(fd, &buffer[index], (BUFFER_SIZE - (index - 1)) * sizeof(char));
   if (n <= 0) {
@@ -117,6 +123,8 @@ int receive_handler(int fd, char* buffer, int index) {
     printf("\rOther guy: ");
   }
 
+  e_decrypt(e_fd, key, (unsigned char*)&buffer[index], iv,
+            (unsigned char*)&buffer[index], n, &sess);
   index += n;
 
   if (buffer[index - 2] == '\n' || index > BUFFER_SIZE) {
@@ -145,8 +153,10 @@ int receive_handler(int fd, char* buffer, int index) {
 // TODO: Check buffer overflow condition
 int send_handler(int fd, char* buffer, int index) {
   int n = read(STDIN_FILENO, &buffer[index], BUFFER_SIZE);
-  index += n;
-  if (buffer[index - 1] == '\n') {
+  if (buffer[index + n - 1] == '\n') {
+    e_encrypt(e_fd, key, (unsigned char*)&buffer[index], iv,
+              (unsigned char*)&buffer[index], n, &sess);
+    index += n;
     printf("You: ");
     buffer[index + 1] = '\0';
     if (insist_write(fd, buffer, index + 1) != index + 1) {
@@ -189,6 +199,9 @@ int main(int argc, char** argv) {
   } else {
     socketFd = client(hostname, listen_port);
   }
+
+  e_fd = openEncryptor();
+  createEncryptionSession(e_fd, key, &sess);
 
   fd_set fdset;
   int readCount = 0, receiveCount = 0;

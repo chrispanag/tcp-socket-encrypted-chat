@@ -13,11 +13,11 @@ all: $(BINS)
 encryptor.o: encryptor.c
 	$(CC) $(CFLAGS) -c encryptor.c
 
-main.o: main_new.c 
+main_new.o: main_new.c 
 	$(CC) $(CFLAGS) -c main_new.c
 
-chatter: main.o encryptor.o
-	$(CC) $(CFLAGS) -o chatter main.o encryptor.o
+chatter: main_new.o encryptor.o
+	$(CC) $(CFLAGS) -o chatter main_new.o encryptor.o
 
 clean:
 	rm -f *.o *~ $(BINS)
