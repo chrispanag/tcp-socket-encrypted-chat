@@ -12,7 +12,7 @@
 
 #define TCP_BACKLOG 1
 
-#define BUFFER_SIZE 1000
+#define BUFFER_SIZE 1008
 
 #define DEFAULT_TCP_PORT 3000
 #define DEFAULT_HOSTNAME "127.0.0.1"
@@ -123,28 +123,31 @@ int receive_handler(int fd, char* buffer, int index) {
     printf("\rOther guy: ");
   }
 
-  e_decrypt(e_fd, key, (unsigned char*)&buffer[index], iv,
-            (unsigned char*)&buffer[index], n, &sess);
-  index += n;
+  if ((index + n - 1) % 16 == 0) {
+    e_decrypt(e_fd, key, (unsigned char*)&buffer[index], iv,
+              (unsigned char*)&buffer[index], n - 1, &sess);
+    index += n - 1;
 
-  if (buffer[index - 2] == '\n' || index > BUFFER_SIZE) {
-    int charactersToPrint = index - 2;
-    if (index > BUFFER_SIZE) {
-      charactersToPrint = index - 1;
+    int charactersToPrint = strlen(buffer);
+    if (buffer[charactersToPrint - 1] == '\n' || index > BUFFER_SIZE) {
+      if (index > BUFFER_SIZE) {
+        charactersToPrint = index - 1;
+      }
+
+      int i;
+      for (i = 0; i < charactersToPrint - 1; i++) {
+        printf("%c", buffer[i]);
+      }
+
+      printf("\n");
+
+      if (buffer[charactersToPrint - 1] == '\n') {
+        printf("You: ");
+      }
+
+      fflush(stdout);
+      index = 0;
     }
-    int i;
-    for (i = 0; i < charactersToPrint; i++) {
-      printf("%c", buffer[i]);
-    }
-
-    printf("\n");
-
-    if (buffer[index - 2] == '\n') {
-      printf("You: ");
-    }
-
-    fflush(stdout);
-    index = 0;
   }
 
   return index;
@@ -154,9 +157,11 @@ int receive_handler(int fd, char* buffer, int index) {
 int send_handler(int fd, char* buffer, int index) {
   int n = read(STDIN_FILENO, &buffer[index], BUFFER_SIZE);
   if (buffer[index + n - 1] == '\n') {
+    int padding_num = (BUFFER_SIZE - n) % 16;
+    memset(&buffer[n], '\0', padding_num);
     e_encrypt(e_fd, key, (unsigned char*)&buffer[index], iv,
-              (unsigned char*)&buffer[index], n, &sess);
-    index += n;
+              (unsigned char*)&buffer[index], n + padding_num, &sess);
+    index += n + padding_num;
     printf("You: ");
     buffer[index + 1] = '\0';
     if (insist_write(fd, buffer, index + 1) != index + 1) {

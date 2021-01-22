@@ -1,8 +1,7 @@
 CC = gcc
 
 CFLAGS = -Wall
-CFLAGS += -g
-# CFLAGS += -O2 -fomit-frame-pointer -finline-functions
+CFLAGS += -g -Ofast
 
 LIBS = 
 

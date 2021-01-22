@@ -28,7 +28,7 @@ int createEncryptionSession(int cfd, unsigned char* key,
                             struct session_op* sess) {
   memset(sess, 0, sizeof(*sess));
 
-  sess->cipher = CRYPTO_AES_CTR;
+  sess->cipher = CRYPTO_AES_CBC;
   sess->keylen = KEY_SIZE;
   sess->key = key;
 
