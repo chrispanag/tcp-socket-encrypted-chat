@@ -14,8 +14,8 @@
 
 #endif
 
-int openEncryptor() {
-  int fd = open("/dev/crypto", O_RDWR);
+int openEncryptor(char* crypto_file_path) {
+  int fd = open(crypto_file_path, O_RDWR);
   if (fd < 0) {
     perror("open(/dev/crypto)");
     return 1;

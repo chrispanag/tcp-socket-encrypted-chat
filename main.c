@@ -16,6 +16,9 @@
 
 #define DEFAULT_TCP_PORT 3000
 #define DEFAULT_HOSTNAME "127.0.0.1"
+#define DEFAULT_CRYPTOFILE_PATH "/dev/crypto"
+#define KEY_SIZE 16
+#define BLOCK_SIZE 16
 
 ssize_t insist_write(int fd, const void* buf, size_t cnt) {
   ssize_t ret;
@@ -106,8 +109,8 @@ int server(int port, int* sd) {
 
 int e_fd = -1;
 struct session_op sess;
-unsigned char* key = (unsigned char*)"123456789123456";
-unsigned char* iv = (unsigned char*)"123456789123456";
+unsigned char key[KEY_SIZE];
+unsigned char iv[BLOCK_SIZE];
 
 int receive_handler(int fd, char* buffer, int index) {
   int n = read(fd, &buffer[index], (BUFFER_SIZE - (index - 1)) * sizeof(char));
@@ -183,20 +186,30 @@ int socketFd;
 int serverFd = -1;
 
 int main(int argc, char** argv) {
-  if (argc < 2 || argc > 4) {
-    printf("Usage: <server|client> <shared_key> <port> <hostname>\n");
+  if (argc < 2 || argc > 6) {
+    printf("Usage: <server|client> <shared_key> <port> <crypto_file_path> <hostname>\n");
     exit(1);
   }
 
   int listen_port = DEFAULT_TCP_PORT;
   char* hostname = DEFAULT_HOSTNAME;
+  char* crypto_file_path = DEFAULT_CRYPTOFILE_PATH;
 
-  if (argc > 2) {
-    listen_port = atoi(argv[2]);
-  }
+  char* key_and_iv = argv[2];
+
+  memcpy(iv, &key_and_iv[KEY_SIZE], KEY_SIZE);
+  memcpy(key, key_and_iv, BLOCK_SIZE);
 
   if (argc > 3) {
-    hostname = argv[3];
+    listen_port = atoi(argv[3]);
+  }
+
+  if (argc > 4) {
+    crypto_file_path = argv[4];
+  }
+
+  if (argc > 5) {
+    hostname = argv[5];
   }
 
   if (strcmp(argv[1], "server") == 0) {
@@ -205,7 +218,7 @@ int main(int argc, char** argv) {
     socketFd = client(hostname, listen_port);
   }
 
-  e_fd = openEncryptor();
+  e_fd = openEncryptor(crypto_file_path);
   createEncryptionSession(e_fd, key, &sess);
 
   fd_set fdset;
